@@ -11,9 +11,10 @@ type magnetTest struct {
 }
 
 func TestParseMagnet(t *testing.T) {
-	uris := []magnetTest{
-		{uri: "magnet:?xt=urn:btih:bbb6db69965af769f664b6636e7914f8735141b3&dn=Ubuntu-12.04-desktop-i386.iso&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Ftracker.publicbt.com%3A80&tr=udp%3A%2F%2Ftracker.istole.it%3A6969&tr=udp%3A%2F%2Ftracker.ccc.de%3A80", infoHashes: []string{"bbb6db69965af769f664b6636e7914f8735141b3"}},
-	}
+	uris := []magnetTest{{
+		uri:        "magnet:?xt=urn:btih:bbb6db69965af769f664b6636e7914f8735141b3&dn=Ubuntu-12.04-desktop-i386.iso&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Ftracker.publicbt.com%3A80&tr=udp%3A%2F%2Ftracker.istole.it%3A6969&tr=udp%3A%2F%2Ftracker.ccc.de%3A80",
+		infoHashes: []string{"\xbb\xb6\xdbi\x96Z\xf7i\xf6d\xb6cny\x14\xf8sQA\xb3"},
+	}}
 
 	for _, u := range uris {
 		m, err := parseMagnet(u.uri)

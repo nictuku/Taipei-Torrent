@@ -2,8 +2,10 @@ package main
 
 import (
 	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"strings"
 )
@@ -45,7 +47,11 @@ func parseMagnet(s string) (Magnet, error) {
 		if len(ih) != sha1.Size*2 { // hex format.
 			return Magnet{}, fmt.Errorf("Magnet URI contains infohash with unexpected length. Wanted %d, got %d: %v", sha1.Size, len(ih), ih)
 		}
-		infoHashes = append(infoHashes, s[1])
+		infoHashDecoded, err := hex.DecodeString(ih)
+		if err != nil {
+			return Magnet{}, fmt.Errorf("Magnet URI contains infohash that cant be hex-decoded '%q': %v", ih, err)
+		}
+		infoHashes = append(infoHashes, string(infoHashDecoded))
 	}
 	return Magnet{infoHashes}, nil
 }
@@ -60,12 +66,32 @@ func torrentFromMagnet(uri string) (torrentBody io.ReadCloser, err error) {
 	if len(m.InfoHashes) == 0 {
 		return nil, fmt.Errorf("No bittorrent infohashes found in the magnet link %v.", uri)
 	}
-	ih := m.InfoHashes[0]
-	return nil, fmt.Errorf("Not supported. Would have downloaded torrent file with hash %v", ih)
-
+	return magnetDownload(m.InfoHashes[0])
 	// Start a torrent session to download the magnet file.
 	//
 	// References:
 	// - http://bittorrent.org/beps/bep_0009.html
 	// TODO: Refactor the torrent code to support multiple sessions per client.
+}
+
+func magnetDownload(ih string) (torrentBody io.ReadCloser, err error) {
+	log.Println("XXX2", ih)
+	infoDict := InfoDict{
+		Name: "magnetfile.torrent",
+		// Single File Mode
+		PieceLength: 16384, // BEP 0009
+		Md5sum:      ih,
+		// Multiple File mode
+	}
+	t := &TorrentSession{
+		m:               &MetaInfo{InfoHash: ih, Info: infoDict},
+		peers:           make(map[string]*peerState),
+		peerMessageChan: make(chan peerMessage),
+		activePieces:    make(map[int]*ActivePiece),
+	}
+
+	if err := t.start(); err != nil {
+		return nil, err
+	}
+	return nil, fmt.Errorf("Not supported. Would have downloaded torrent file with hash %v", ih)
 }

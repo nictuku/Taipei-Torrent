@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"time"
 
@@ -198,35 +197,31 @@ type TorrentSession struct {
 	dht             *dht.DHTEngine
 }
 
-func NewTorrentSession(torrent string) (ts *TorrentSession, err error) {
+func NewTorrentSession(torrent string) (t *TorrentSession, err error) {
 
-	var listenPort int
-	if listenPort, err = chooseListenPort(); err != nil {
-		log.Println("Could not choose listen port.")
-		log.Println("Peer connectivity will be affected.")
-	}
-	t := &TorrentSession{peers: make(map[string]*peerState),
+	t = &TorrentSession{peers: make(map[string]*peerState),
 		peerMessageChan: make(chan peerMessage),
 		activePieces:    make(map[int]*ActivePiece)}
 	t.m, err = getMetaInfo(torrent)
 	if err != nil {
-		return
+		return nil, err
+	}
+	return t, t.start()
+}
+
+func (t *TorrentSession) start() (err error) {
+	listenPort, err := chooseListenPort()
+	if err != nil {
+		log.Println("Could not choose listen port.")
+		log.Println("Peer connectivity will be affected.")
 	}
 	log.Printf("Tracker: %v, Comment: %v, InfoHash: %x, Encoding: %v, Private: %v",
 		t.m.Announce, t.m.Comment, t.m.InfoHash, t.m.Encoding, t.m.Info.Private)
 	if e := t.m.Encoding; e != "" && e != "UTF-8" {
-		return nil, errors.New(fmt.Sprintf("Unknown encoding %s", e))
-	}
-	ext := ".torrent"
-	dir := fileDir
-	if len(t.m.Info.Files) != 0 {
-		dir += "/" + filepath.Base(torrent)
-		if dir[len(dir)-len(ext):] == ext {
-			dir = dir[:len(dir)-len(ext)]
-		}
+		return errors.New(fmt.Sprintf("Unknown encoding %s", e))
 	}
 
-	t.fileStore, t.totalSize, err = NewFileStore(&t.m.Info, dir)
+	t.fileStore, t.totalSize, err = NewFileStore(&t.m.Info, fileDir)
 	if err != nil {
 		return
 	}
@@ -257,7 +252,7 @@ func NewTorrentSession(torrent string) (ts *TorrentSession, err error) {
 		}
 		go t.dht.DoDHT()
 	}
-	return t, err
+	return
 }
 
 func (t *TorrentSession) fetchTrackerInfo(event string) {

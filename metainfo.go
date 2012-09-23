@@ -53,6 +53,7 @@ func getString(m map[string]interface{}, k string) string {
 
 func getMetaInfo(torrent string) (metaInfo *MetaInfo, err error) {
 	var input io.ReadCloser
+	log.Println("XXX ", torrent)
 	if strings.HasPrefix(torrent, "http:") {
 		r, err := proxyHttpGet(torrent)
 		if err != nil {
