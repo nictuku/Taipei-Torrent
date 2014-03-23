@@ -237,7 +237,7 @@ func (t *TorrentSession) load() {
 			dir = dir[:len(dir)-len(ext)]
 		}
 	}
-
+	go startHTTP()
 	t.fileStore, t.totalSize, err = NewFileStore(&t.m.Info, dir)
 	if err != nil {
 		return

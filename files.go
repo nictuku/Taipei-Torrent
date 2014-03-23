@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -111,6 +113,11 @@ func NewFileStore(info *InfoDict, storePath string) (f FileStore, totalSize int6
 		totalSize += src.Length
 	}
 	f = fs
+
+	if false {
+		go log.Fatal(http.ListenAndServe(":8080", http.FileServer(http.Dir(storePath))))
+	}
+
 	return
 }
 
